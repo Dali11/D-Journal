@@ -6,6 +6,7 @@ import type {
     DayOfWeekPnl,
     DisciplineRow,
     EquityPoint,
+    Goal,
     GroupStat,
     PerformanceStats,
     SessionPnl,
@@ -447,6 +448,56 @@ export async function getDailyReview(date: string) {
         whatToRepeat: data.what_to_repeat ?? "",
         oneThingToImprove: data.one_thing_to_improve ?? "",
         tomorrowsFocus: data.tomorrows_focus ?? "",
+    };
+}
+
+function mapGoalRow(row: any): Goal {
+    return {
+        id: row.id,
+        accountId: row.account_id,
+        category: row.category,
+        metric: row.metric,
+        title: row.title,
+        targetValue: Number(row.target_value),
+        direction: row.direction,
+        period: row.period,
+        fromDate: row.from_date,
+        toDate: row.to_date,
+        createdAt: row.created_at,
+    };
+}
+
+export async function getGoals(accountId: string): Promise<Goal[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("goals")
+        .select("*")
+        .eq("account_id", accountId)
+        .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return (data ?? []).map(mapGoalRow);
+}
+
+export async function getReport(accountId: string, from: string, to: string) {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("reports")
+        .select("*")
+        .eq("account_id", accountId)
+        .eq("from_date", from)
+        .eq("to_date", to)
+        .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return null;
+
+    return {
+        title: data.title ?? "",
+        whatWentWell: data.what_went_well ?? "",
+        whatToImprove: data.what_to_improve ?? "",
+        focusNext: data.focus_next ?? "",
+        updatedAt: data.updated_at,
     };
 }
 

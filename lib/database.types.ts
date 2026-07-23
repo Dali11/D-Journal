@@ -237,6 +237,93 @@ export interface Database {
                 }
                 Relationships: []
             }
+            reports: {
+                Row: {
+                    id: string
+                    user_id: string
+                    account_id: string
+                    from_date: string
+                    to_date: string
+                    title: string | null
+                    what_went_well: string | null
+                    what_to_improve: string | null
+                    focus_next: string | null
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    account_id: string
+                    from_date: string
+                    to_date: string
+                    title?: string | null
+                    what_went_well?: string | null
+                    what_to_improve?: string | null
+                    focus_next?: string | null
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    account_id?: string
+                    from_date?: string
+                    to_date?: string
+                    title?: string | null
+                    what_went_well?: string | null
+                    what_to_improve?: string | null
+                    focus_next?: string | null
+                    created_at?: string
+                    updated_at?: string
+                }
+                Relationships: []
+            }
+            goals: {
+                Row: {
+                    id: string
+                    user_id: string
+                    account_id: string
+                    category: "performance" | "process"
+                    metric: string
+                    title: string
+                    target_value: number
+                    direction: "at_least" | "at_most"
+                    period: "week" | "month" | "quarter" | "all" | "custom"
+                    from_date: string | null
+                    to_date: string | null
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    account_id: string
+                    category: "performance" | "process"
+                    metric: string
+                    title: string
+                    target_value: number
+                    direction: "at_least" | "at_most"
+                    period: "week" | "month" | "quarter" | "all" | "custom"
+                    from_date?: string | null
+                    to_date?: string | null
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    account_id?: string
+                    category?: "performance" | "process"
+                    metric?: string
+                    title?: string
+                    target_value?: number
+                    direction?: "at_least" | "at_most"
+                    period?: "week" | "month" | "quarter" | "all" | "custom"
+                    from_date?: string | null
+                    to_date?: string | null
+                    created_at?: string
+                }
+                Relationships: []
+            }
         }
         Views: Record<string, never>
         Functions: Record<string, never>

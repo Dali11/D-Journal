@@ -129,6 +129,48 @@ export interface PerformanceStats {
   maxConsecutiveLosses: number;
 }
 
+export type GoalCategory = "performance" | "process";
+
+export type GoalMetric =
+  | "total_pnl"
+  | "win_rate"
+  | "profit_factor"
+  | "expectancy"
+  | "avg_rr"
+  | "followed_plan_pct"
+  | "no_revenge_pct"
+  | "no_fomo_pct"
+  | "a_plus_setup_pct"
+  | "trade_count";
+
+export type GoalDirection = "at_least" | "at_most";
+export type GoalPeriod = "week" | "month" | "quarter" | "all" | "custom";
+
+export interface Goal {
+  id: string;
+  accountId: string;
+  category: GoalCategory;
+  metric: GoalMetric;
+  title: string;
+  targetValue: number;
+  direction: GoalDirection;
+  period: GoalPeriod;
+  fromDate: string | null;
+  toDate: string | null;
+  createdAt: string;
+}
+
+export interface GoalProgress {
+  goal: Goal;
+  currentValue: number;
+  progressPct: number;
+  achieved: boolean;
+  rangeFrom: string;
+  rangeTo: string;
+  rangeLabel: string;
+  tradesInPeriod: number;
+}
+
 export interface DailyReview {
   bestTradeLabel: string;
   bestTradePnl: number;

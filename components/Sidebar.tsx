@@ -34,7 +34,7 @@ export default function Sidebar({ accounts }: { accounts: Account[] }) {
   const pathname = usePathname();
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-border bg-canvas lg:flex">
+    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-border bg-canvas lg:flex print:hidden">
       <div className="flex items-center gap-3 px-6 py-6">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/15 text-accent">
           <BarChart3 size={18} />
