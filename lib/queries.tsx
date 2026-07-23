@@ -4,9 +4,13 @@ import type {
     AccountSummary,
     DailyPnl,
     DayOfWeekPnl,
+    DisciplineRow,
     EquityPoint,
+    GroupStat,
     PerformanceStats,
     SessionPnl,
+    Setup,
+    SetupStats,
     SetupWinRate,
     Trade,
 } from "./types";
@@ -35,6 +39,7 @@ function mapTradeRow(row: any): Trade {
         rewardPts: Number(row.reward_pts ?? 0),
         rrAchieved: Number(row.rr_achieved ?? 0),
         pnl: Number(row.pnl),
+        setup: row.setup ?? null,
         aPlusSetup: row.a_plus_setup ?? "No",
         trendDirection: row.trend_direction ?? "Range",
         htfBias: row.htf_bias ?? "Neutral",
@@ -62,9 +67,33 @@ function mapAccountRow(row: any): Account {
     };
 }
 
+function mapSetupRow(row: any): Setup {
+    return {
+        id: row.id,
+        name: row.name,
+        description: row.description ?? "",
+        criteria: (row.criteria ?? "")
+            .split("\n")
+            .map((line: string) => line.trim())
+            .filter(Boolean),
+        color: row.color ?? "#7C6CF2",
+    };
+}
+
 // ------------------------------------------------------------
 // Fetchers
 // ------------------------------------------------------------
+export async function getSetups(): Promise<Setup[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("setups")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+    if (error) throw error;
+    return (data ?? []).map(mapSetupRow);
+}
+
 export async function getAccounts(): Promise<Account[]> {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -249,20 +278,37 @@ export function computeDayOfWeekPnl(trades: Trade[]): DayOfWeekPnl[] {
     }));
 }
 
+export function computeSetupStats(setups: Setup[], trades: Trade[]): SetupStats[] {
+    return setups.map((setup) => {
+        const matched = trades.filter((t) => (t.setup?.trim() || "") === setup.name);
+        const wins = matched.filter((t) => t.pnl > 0).length;
+        const totalPnl = matched.reduce((s, t) => s + t.pnl, 0);
+        return {
+            ...setup,
+            trades: matched.length,
+            winRate: matched.length ? Number(((wins / matched.length) * 100).toFixed(1)) : 0,
+            totalPnl: Number(totalPnl.toFixed(2)),
+            avgPnl: matched.length ? Number((totalPnl / matched.length).toFixed(2)) : 0,
+        };
+    });
+}
+
 export function computeSetupWinRates(trades: Trade[]): SetupWinRate[] {
     const bySetup = new Map<string, { trades: number; wins: number }>();
     for (const t of trades) {
-        const key = (t as any).setup || "Untagged";
+        const key = t.setup?.trim() || "Untagged";
         const entry = bySetup.get(key) ?? { trades: 0, wins: 0 };
         entry.trades += 1;
         if (t.pnl > 0) entry.wins += 1;
         bySetup.set(key, entry);
     }
-    return Array.from(bySetup.entries()).map(([name, { trades: n, wins }]) => ({
-        name,
-        trades: n,
-        winRate: n ? Number(((wins / n) * 100).toFixed(1)) : 0,
-    }));
+    return Array.from(bySetup.entries())
+        .map(([name, { trades: n, wins }]) => ({
+            name,
+            trades: n,
+            winRate: n ? Number(((wins / n) * 100).toFixed(1)) : 0,
+        }))
+        .sort((a, b) => b.winRate - a.winRate);
 }
 
 export function computeHeadline(trades: Trade[], startingBalance: number) {
@@ -306,6 +352,80 @@ export function computeHeadline(trades: Trade[], startingBalance: number) {
         maxDrawdown: Number(worstDay.toFixed(2)),
         maxDrawdownDate: fmtDate(worstDayDate),
     };
+}
+
+export function computePnlByInstrument(trades: Trade[]): GroupStat[] {
+    const byInstrument = new Map<string, { pnl: number; trades: number; wins: number }>();
+    for (const t of trades) {
+        const key = t.instrument || "Unknown";
+        const entry = byInstrument.get(key) ?? { pnl: 0, trades: 0, wins: 0 };
+        entry.pnl += t.pnl;
+        entry.trades += 1;
+        if (t.pnl > 0) entry.wins += 1;
+        byInstrument.set(key, entry);
+    }
+    return Array.from(byInstrument.entries())
+        .map(([name, e]) => ({
+            name,
+            pnl: Number(e.pnl.toFixed(2)),
+            trades: e.trades,
+            winRate: e.trades ? Number(((e.wins / e.trades) * 100).toFixed(1)) : 0,
+        }))
+        .sort((a, b) => b.pnl - a.pnl);
+}
+
+export function computePnlByDirection(trades: Trade[]): GroupStat[] {
+    return (["Long", "Short"] as const).map((direction) => {
+        const subset = trades.filter((t) => t.direction === direction);
+        const pnl = subset.reduce((s, t) => s + t.pnl, 0);
+        const wins = subset.filter((t) => t.pnl > 0).length;
+        return {
+            name: direction,
+            pnl: Number(pnl.toFixed(2)),
+            trades: subset.length,
+            winRate: subset.length ? Number(((wins / subset.length) * 100).toFixed(1)) : 0,
+        };
+    });
+}
+
+export function computeGradeBreakdown(trades: Trade[]): GroupStat[] {
+    const grades = ["A", "B", "C", "D", "F"] as const;
+    return grades
+        .map((grade) => {
+            const subset = trades.filter((t) => t.grade === grade);
+            const pnl = subset.reduce((s, t) => s + t.pnl, 0);
+            const wins = subset.filter((t) => t.pnl > 0).length;
+            return {
+                name: grade,
+                pnl: Number(pnl.toFixed(2)),
+                trades: subset.length,
+                winRate: subset.length ? Number(((wins / subset.length) * 100).toFixed(1)) : 0,
+            };
+        })
+        .filter((g) => g.trades > 0);
+}
+
+export function computeDisciplineStats(trades: Trade[]): DisciplineRow[] {
+    const avgPnl = (subset: Trade[]) =>
+        subset.length ? Number((subset.reduce((s, t) => s + t.pnl, 0) / subset.length).toFixed(2)) : 0;
+
+    function breakdown(label: string, getter: (t: Trade) => string): DisciplineRow {
+        const yes = trades.filter((t) => getter(t) === "Yes");
+        const no = trades.filter((t) => getter(t) === "No");
+        return {
+            label,
+            yesTrades: yes.length,
+            yesAvgPnl: avgPnl(yes),
+            noTrades: no.length,
+            noAvgPnl: avgPnl(no),
+        };
+    }
+
+    return [
+        breakdown("Followed plan", (t) => t.followedPlan),
+        breakdown("Revenge trade", (t) => t.revengeTrade),
+        breakdown("FOMO entry", (t) => t.fomo),
+    ];
 }
 
 export async function getDailyReview(date: string) {

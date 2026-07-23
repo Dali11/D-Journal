@@ -1,9 +1,9 @@
 import Sidebar from "@/components/Sidebar";
 import NewTradeForm from "@/components/NewTradeForm";
-import { getAccounts } from "@/lib/queries";
+import { getAccounts, getSetups } from "@/lib/queries";
 
 export default async function NewTradePage() {
-    const accounts = await getAccounts();
+    const [accounts, setups] = await Promise.all([getAccounts(), getSetups()]);
 
     return (
         <div className="flex min-h-screen bg-canvas text-ink-primary">
@@ -21,7 +21,7 @@ export default async function NewTradePage() {
                             You need at least one account before logging a trade. Add one in Supabase first.
                         </div>
                     ) : (
-                        <NewTradeForm accounts={accounts} />
+                        <NewTradeForm accounts={accounts} setups={setups} />
                     )}
                 </div>
             </main>

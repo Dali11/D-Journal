@@ -9,6 +9,21 @@ export interface Account {
   color: string;
 }
 
+export interface Setup {
+  id: string;
+  name: string;
+  description: string;
+  criteria: string[]; // checklist items
+  color: string;
+}
+
+export interface SetupStats extends Setup {
+  trades: number;
+  winRate: number;
+  totalPnl: number;
+  avgPnl: number;
+}
+
 export interface AccountSummary {
   accountName: string;
   consistencyPct: number;
@@ -42,6 +57,7 @@ export interface Trade {
   rewardPts: number;
   rrAchieved: number;
   pnl: number;
+  setup: string | null;
   aPlusSetup: YesNo;
   trendDirection: "Uptrend" | "Downtrend" | "Range";
   htfBias: "Bullish" | "Bearish" | "Neutral";
@@ -83,6 +99,21 @@ export interface SetupWinRate {
   name: string;
   trades: number;
   winRate: number;
+}
+
+export interface GroupStat {
+  name: string;
+  pnl: number;
+  trades: number;
+  winRate: number;
+}
+
+export interface DisciplineRow {
+  label: string;
+  yesTrades: number;
+  yesAvgPnl: number;
+  noTrades: number;
+  noAvgPnl: number;
 }
 
 export interface PerformanceStats {

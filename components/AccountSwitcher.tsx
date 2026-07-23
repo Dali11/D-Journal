@@ -9,9 +9,15 @@ import type { Account } from "@/lib/types";
 export default function AccountSwitcher({
     accounts,
     activeAccountId,
+    basePath = "/",
+    extraQuery = "",
 }: {
     accounts: Account[];
     activeAccountId: string | null;
+    /** Route to switch accounts on, e.g. "/calendar". Defaults to the dashboard. */
+    basePath?: string;
+    /** Extra query string (without leading "?"/"&") to preserve, e.g. "month=2026-07". */
+    extraQuery?: string;
 }) {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
@@ -55,7 +61,8 @@ export default function AccountSwitcher({
                             type="button"
                             onClick={() => {
                                 setOpen(false);
-                                router.push(`/?account=${a.id}`);
+                                const query = extraQuery ? `account=${a.id}&${extraQuery}` : `account=${a.id}`;
+                                router.push(`${basePath}?${query}`);
                             }}
                             className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-surface-hover ${a.id === activeAccountId ? "text-accent" : "text-ink-secondary"
                                 }`}

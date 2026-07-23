@@ -3,7 +3,7 @@
 import { useFormState, useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createTrade, type TradeFormResult } from "@/lib/actions/trades";
-import type { Account } from "@/lib/types";
+import type { Account, Setup } from "@/lib/types";
 
 const initialState: TradeFormResult = { error: null };
 
@@ -65,7 +65,7 @@ function SubmitButton() {
     );
 }
 
-export default function NewTradeForm({ accounts }: { accounts: Account[] }) {
+export default function NewTradeForm({ accounts, setups = [] }: { accounts: Account[]; setups?: Setup[] }) {
     const [state, formAction] = useFormState(createTrade, initialState);
     const router = useRouter();
     const today = new Date().toISOString().slice(0, 10);
@@ -164,7 +164,17 @@ export default function NewTradeForm({ accounts }: { accounts: Account[] }) {
 
                 <SectionCard index={3} title="Setup checklist">
                     <Field label="Setup name">
-                        <input name="setup" placeholder="e.g. Trend continuation" className={inputClass} />
+                        <input
+                            name="setup"
+                            list="setup-options"
+                            placeholder="e.g. Trend continuation"
+                            className={inputClass}
+                        />
+                        <datalist id="setup-options">
+                            {setups.map((s) => (
+                                <option key={s.id} value={s.name} />
+                            ))}
+                        </datalist>
                     </Field>
                     <Field label="A+ setup?">
                         <select name="aPlusSetup" className={selectClass} defaultValue="">
