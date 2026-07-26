@@ -8,6 +8,7 @@ import type {
     EquityPoint,
     Goal,
     GroupStat,
+    Note,
     PerformanceStats,
     SessionPnl,
     Setup,
@@ -477,6 +478,64 @@ export async function getGoals(accountId: string): Promise<Goal[]> {
 
     if (error) throw error;
     return (data ?? []).map(mapGoalRow);
+}
+
+function mapNoteRow(row: any): Note {
+    const trade = row.trade;
+    return {
+        id: row.id,
+        accountId: row.account_id,
+        tradeId: row.trade_id,
+        title: row.title,
+        body: row.body ?? "",
+        resolution: row.resolution ?? "",
+        tags: row.tags ?? [],
+        pinned: row.pinned ?? false,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        linkedTrade: trade
+            ? { date: trade.date, instrument: trade.instrument, pnl: Number(trade.pnl) }
+            : null,
+    };
+}
+
+export async function getNotes(accountId: string): Promise<Note[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("notes")
+        .select("*, trade:trades(date, instrument, pnl)")
+        .eq("account_id", accountId)
+        .order("pinned", { ascending: false })
+        .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return (data ?? []).map(mapNoteRow);
+}
+
+export async function getNotesForTrade(tradeId: string): Promise<Note[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("notes")
+        .select("*, trade:trades(date, instrument, pnl)")
+        .eq("trade_id", tradeId)
+        .order("pinned", { ascending: false })
+        .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return (data ?? []).map(mapNoteRow);
+}
+
+export async function getNoteById(noteId: string): Promise<Note | null> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("notes")
+        .select("*, trade:trades(date, instrument, pnl)")
+        .eq("id", noteId)
+        .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return null;
+    return mapNoteRow(data);
 }
 
 export async function getReport(accountId: string, from: string, to: string) {

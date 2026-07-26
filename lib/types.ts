@@ -171,6 +171,26 @@ export interface GoalProgress {
   tradesInPeriod: number;
 }
 
+export interface NoteLinkedTrade {
+  date: string;
+  instrument: string;
+  pnl: number;
+}
+
+export interface Note {
+  id: string;
+  accountId: string;
+  tradeId: string | null;
+  title: string;
+  body: string;
+  resolution: string;
+  tags: string[];
+  pinned: boolean;
+  createdAt: string;
+  updatedAt: string;
+  linkedTrade: NoteLinkedTrade | null;
+}
+
 export interface DailyReview {
   bestTradeLabel: string;
   bestTradePnl: number;

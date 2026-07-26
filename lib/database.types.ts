@@ -324,6 +324,48 @@ export interface Database {
                 }
                 Relationships: []
             }
+            notes: {
+                Row: {
+                    id: string
+                    user_id: string
+                    account_id: string
+                    trade_id: string | null
+                    title: string
+                    body: string
+                    resolution: string
+                    tags: string[]
+                    pinned: boolean
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    account_id: string
+                    trade_id?: string | null
+                    title: string
+                    body?: string
+                    resolution?: string
+                    tags?: string[]
+                    pinned?: boolean
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    account_id?: string
+                    trade_id?: string | null
+                    title?: string
+                    body?: string
+                    resolution?: string
+                    tags?: string[]
+                    pinned?: boolean
+                    created_at?: string
+                    updated_at?: string
+                }
+                Relationships: []
+            }
         }
         Views: Record<string, never>
         Functions: Record<string, never>
