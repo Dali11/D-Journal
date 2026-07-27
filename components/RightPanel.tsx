@@ -2,12 +2,16 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { AccountSummary, DailyPnl } from "@/lib/types";
-import { formatUsd, pnlColor } from "@/lib/format";
+import { formatUsd, pnlColor, formatConsistencyPct } from "@/lib/format";
 
-function ConsistencyRing({ pct }: { pct: number }) {
+function ConsistencyRing({ pct, rule, totalProfit }: { pct: number; rule: number; totalProfit: number }) {
   const r = 44;
   const c = 2 * Math.PI * r;
-  const offset = c - (Math.min(pct, 100) / 100) * c;
+  const hasData = totalProfit > 0;
+  const withinRule = hasData && pct <= rule;
+  const offset = c - (Math.min(hasData ? pct : 0, 100) / 100) * c;
+  const strokeColor = !hasData ? "#5B6478" : withinRule ? "#2FD68A" : "#F5566B";
+
   return (
     <div className="relative flex h-28 w-28 items-center justify-center">
       <svg width="112" height="112" viewBox="0 0 112 112" className="-rotate-90">
@@ -16,7 +20,7 @@ function ConsistencyRing({ pct }: { pct: number }) {
           cx="56"
           cy="56"
           r={r}
-          stroke="#7C6CF2"
+          stroke={strokeColor}
           strokeWidth="9"
           fill="none"
           strokeDasharray={c}
@@ -25,7 +29,7 @@ function ConsistencyRing({ pct }: { pct: number }) {
         />
       </svg>
       <div className="absolute flex flex-col items-center">
-        <span className="num text-lg font-medium">{pct}%</span>
+        <span className="num text-lg font-medium">{formatConsistencyPct(pct, totalProfit)}</span>
         <span className="text-[10px] text-ink-muted">Consistency</span>
       </div>
     </div>
@@ -94,7 +98,11 @@ export default function RightPanel({
         <p className="mb-4 text-sm text-ink-secondary">{accountSummary.accountName}</p>
 
         <div className="flex items-center gap-5">
-          <ConsistencyRing pct={accountSummary.consistencyPct} />
+          <ConsistencyRing
+            pct={accountSummary.consistencyPct}
+            rule={accountSummary.consistencyRule}
+            totalProfit={accountSummary.totalProfit}
+          />
           <div className="flex-1">
             <SummaryRow label="Total profit" value={formatUsd(accountSummary.totalProfit)} valueClass="text-profit" />
             <SummaryRow label="Profit target" value={formatUsd(accountSummary.profitTarget)} />
@@ -111,7 +119,17 @@ export default function RightPanel({
 
         <div className="mt-4 border-t border-border pt-2">
           <SummaryRow label="Consistency rule" value={`${accountSummary.consistencyRule}%`} />
-          <SummaryRow label="Current consistency" value={`${accountSummary.consistencyPct}%`} valueClass="text-warn" />
+          <SummaryRow
+            label="Current consistency"
+            value={formatConsistencyPct(accountSummary.consistencyPct, accountSummary.totalProfit)}
+            valueClass={
+              accountSummary.totalProfit <= 0
+                ? "text-ink-muted"
+                : accountSummary.consistencyPct <= accountSummary.consistencyRule
+                  ? "text-profit"
+                  : "text-loss"
+            }
+          />
           <SummaryRow label="Remaining drawdown" value={formatUsd(accountSummary.remainingDrawdown)} valueClass="text-profit" />
           <SummaryRow label="Max daily loss" value={formatUsd(accountSummary.maxDailyLoss)} />
           <SummaryRow
@@ -154,8 +172,8 @@ export default function RightPanel({
                   <div
                     key={cell.date}
                     className={`flex h-14 flex-col items-center justify-center rounded-lg border text-xs ${isToday
-                        ? "border-accent bg-accent/10"
-                        : "border-transparent bg-canvas"
+                      ? "border-accent bg-accent/10"
+                      : "border-transparent bg-canvas"
                       }`}
                   >
                     <span className="text-[10px] text-ink-muted">{cell.day}</span>

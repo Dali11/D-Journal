@@ -22,3 +22,13 @@ export function pnlColor(value: number): string {
   if (value < 0) return "text-loss";
   return "text-ink-secondary";
 }
+
+// The consistency rule compares your single best day's profit against total
+// profit, so it can spike into absurd numbers (e.g. 5000%+) when total
+// profit is still small. Cap the *display* at a sane ceiling while leaving
+// the underlying number intact for the pass/fail check.
+export function formatConsistencyPct(pct: number, totalProfit: number): string {
+  if (totalProfit <= 0) return "—";
+  if (pct > 999) return "999%+";
+  return `${Math.round(pct)}%`;
+} 
