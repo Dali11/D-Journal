@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import type {
     Account,
     AccountSummary,
+    DailyAnalysis,
+    DailyAnalysisScreenshot,
     DailyPnl,
     DayOfWeekPnl,
     DisciplineRow,
@@ -15,6 +17,7 @@ import type {
     SetupStats,
     SetupWinRate,
     Trade,
+    TradeScreenshot,
 } from "./types";
 
 // ------------------------------------------------------------
@@ -466,6 +469,136 @@ function mapGoalRow(row: any): Goal {
         toDate: row.to_date,
         createdAt: row.created_at,
     };
+}
+
+function mapTradeScreenshotRow(row: any): TradeScreenshot {
+    return {
+        id: row.id,
+        tradeId: row.trade_id,
+        url: row.url,
+        label: row.label ?? "Screenshot",
+        createdAt: row.created_at,
+    };
+}
+
+export async function getTradeScreenshots(tradeId: string): Promise<TradeScreenshot[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("trade_screenshots")
+        .select("*")
+        .eq("trade_id", tradeId)
+        .order("position", { ascending: true })
+        .order("created_at", { ascending: true });
+
+    if (error) throw error;
+    return (data ?? []).map(mapTradeScreenshotRow);
+}
+
+// All extra screenshots across every trade, used by the Screenshots page
+// alongside the entry/exit images already carried on each trade.
+export async function getAllTradeScreenshots(): Promise<TradeScreenshot[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("trade_screenshots")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return (data ?? []).map(mapTradeScreenshotRow);
+}
+
+function mapDailyAnalysisRow(row: any): DailyAnalysis {
+    return {
+        accountId: row.account_id,
+        date: row.date,
+        htfBias: row.htf_bias ?? "",
+        keyLevels: row.key_levels ?? "",
+        newsEvents: row.news_events ?? "",
+        plan: row.plan ?? "",
+        marketUpdate: row.market_update ?? "",
+        emotionalState: row.emotional_state ?? "",
+        deviations: row.deviations ?? "",
+        whatHappened: row.what_happened ?? "",
+        lessons: row.lessons ?? "",
+        whatToRepeat: row.what_to_repeat ?? "",
+        whatToImprove: row.what_to_improve ?? "",
+        updatedAt: row.updated_at ?? null,
+    };
+}
+
+const emptyDailyAnalysis = (accountId: string, date: string): DailyAnalysis => ({
+    accountId,
+    date,
+    htfBias: "",
+    keyLevels: "",
+    newsEvents: "",
+    plan: "",
+    marketUpdate: "",
+    emotionalState: "",
+    deviations: "",
+    whatHappened: "",
+    lessons: "",
+    whatToRepeat: "",
+    whatToImprove: "",
+    updatedAt: null,
+});
+
+// Which dates (in range) already have any daily analysis content saved,
+// used to put a small indicator on the Calendar.
+export async function getDailyAnalysisDates(accountId: string, from: string, to: string): Promise<string[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("daily_analyses")
+        .select("date")
+        .eq("account_id", accountId)
+        .gte("date", from)
+        .lte("date", to);
+
+    if (error) throw error;
+    return (data ?? []).map((row) => row.date);
+}
+
+export async function getDailyAnalysis(accountId: string, date: string): Promise<DailyAnalysis> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("daily_analyses")
+        .select("*")
+        .eq("account_id", accountId)
+        .eq("date", date)
+        .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return emptyDailyAnalysis(accountId, date);
+    return mapDailyAnalysisRow(data);
+}
+
+function mapDailyAnalysisScreenshotRow(row: any): DailyAnalysisScreenshot {
+    return {
+        id: row.id,
+        accountId: row.account_id,
+        date: row.date,
+        phase: row.phase,
+        url: row.url,
+        label: row.label ?? "Screenshot",
+        createdAt: row.created_at,
+    };
+}
+
+export async function getDailyAnalysisScreenshots(
+    accountId: string,
+    date: string
+): Promise<DailyAnalysisScreenshot[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("daily_analysis_screenshots")
+        .select("*")
+        .eq("account_id", accountId)
+        .eq("date", date)
+        .order("position", { ascending: true })
+        .order("created_at", { ascending: true });
+
+    if (error) throw error;
+    return (data ?? []).map(mapDailyAnalysisScreenshotRow);
 }
 
 export async function getGoals(accountId: string): Promise<Goal[]> {

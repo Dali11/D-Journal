@@ -366,6 +366,132 @@ export interface Database {
                 }
                 Relationships: []
             }
+            trade_screenshots: {
+                Row: {
+                    id: string
+                    user_id: string
+                    trade_id: string
+                    url: string
+                    label: string
+                    position: number
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    trade_id: string
+                    url: string
+                    label?: string
+                    position?: number
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    trade_id?: string
+                    url?: string
+                    label?: string
+                    position?: number
+                    created_at?: string
+                }
+                Relationships: []
+            }
+            daily_analyses: {
+                Row: {
+                    id: string
+                    user_id: string
+                    account_id: string
+                    date: string
+                    htf_bias: string | null
+                    key_levels: string | null
+                    news_events: string | null
+                    plan: string | null
+                    market_update: string | null
+                    emotional_state: string | null
+                    deviations: string | null
+                    what_happened: string | null
+                    lessons: string | null
+                    what_to_repeat: string | null
+                    what_to_improve: string | null
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    account_id: string
+                    date: string
+                    htf_bias?: string | null
+                    key_levels?: string | null
+                    news_events?: string | null
+                    plan?: string | null
+                    market_update?: string | null
+                    emotional_state?: string | null
+                    deviations?: string | null
+                    what_happened?: string | null
+                    lessons?: string | null
+                    what_to_repeat?: string | null
+                    what_to_improve?: string | null
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    account_id?: string
+                    date?: string
+                    htf_bias?: string | null
+                    key_levels?: string | null
+                    news_events?: string | null
+                    plan?: string | null
+                    market_update?: string | null
+                    emotional_state?: string | null
+                    deviations?: string | null
+                    what_happened?: string | null
+                    lessons?: string | null
+                    what_to_repeat?: string | null
+                    what_to_improve?: string | null
+                    created_at?: string
+                    updated_at?: string
+                }
+                Relationships: []
+            }
+            daily_analysis_screenshots: {
+                Row: {
+                    id: string
+                    user_id: string
+                    account_id: string
+                    date: string
+                    phase: "pre" | "mid" | "end"
+                    url: string
+                    label: string
+                    position: number
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    account_id: string
+                    date: string
+                    phase: "pre" | "mid" | "end"
+                    url: string
+                    label?: string
+                    position?: number
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    account_id?: string
+                    date?: string
+                    phase?: "pre" | "mid" | "end"
+                    url?: string
+                    label?: string
+                    position?: number
+                    created_at?: string
+                }
+                Relationships: []
+            }
         }
         Views: Record<string, never>
         Functions: Record<string, never>

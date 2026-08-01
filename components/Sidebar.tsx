@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   ArrowLeftRight,
   Calendar,
+  ClipboardList,
   BarChart3,
   Settings,
   Camera,
@@ -22,6 +23,7 @@ const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/" },
   { label: "Trades", icon: ArrowLeftRight, href: "/trades" },
   { label: "Calendar", icon: Calendar, href: "/calendar" },
+  { label: "Daily Analysis", icon: ClipboardList, href: "/daily" },
   { label: "Analytics", icon: BarChart3, href: "/analytics" },
   { label: "Setups", icon: Settings, href: "/setups" },
   { label: "Screenshots", icon: Camera, href: "/screenshots" },
@@ -53,8 +55,8 @@ export default function Sidebar({ accounts }: { accounts: Account[] }) {
               key={label}
               href={href}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${active
-                  ? "bg-accent/15 text-accent"
-                  : "text-ink-secondary hover:bg-surface-hover hover:text-ink-primary"
+                ? "bg-accent/15 text-accent"
+                : "text-ink-secondary hover:bg-surface-hover hover:text-ink-primary"
                 }`}
             >
               <Icon size={17} strokeWidth={1.8} />

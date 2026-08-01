@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ClipboardList } from "lucide-react";
 import type { Trade } from "@/lib/types";
 import type { CalendarCell, MonthSummary } from "@/lib/calendar";
 import { formatUsd, pnlColor } from "@/lib/format";
@@ -29,13 +31,18 @@ export default function CalendarView({
     weeks,
     tradesByDate,
     summary,
+    accountId,
+    analysisDates,
 }: {
     weeks: CalendarCell[][];
     tradesByDate: Record<string, Trade[]>;
     summary: MonthSummary;
+    accountId: string;
+    analysisDates: string[];
 }) {
     const router = useRouter();
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
+    const analysisDateSet = useMemo(() => new Set(analysisDates), [analysisDates]);
 
     const selectedTrades = useMemo(
         () => (selectedDate ? tradesByDate[selectedDate] ?? [] : []),
@@ -62,18 +69,25 @@ export default function CalendarView({
                                 }
                                 const isSelected = cell.date === selectedDate;
                                 const hasData = cell.pnl !== null;
+                                const hasAnalysis = analysisDateSet.has(cell.date);
                                 return (
                                     <button
                                         key={cell.date}
                                         type="button"
                                         onClick={() => setSelectedDate(isSelected ? null : cell.date)}
-                                        className={`flex h-24 flex-col items-start justify-between rounded-lg border p-2 text-left transition-colors ${isSelected
+                                        className={`relative flex h-24 flex-col items-start justify-between rounded-lg border p-2 text-left transition-colors ${isSelected
                                             ? "border-accent bg-accent/10"
                                             : cell.isToday
                                                 ? "border-accent/60 bg-canvas"
                                                 : "border-transparent bg-canvas hover:border-border-strong"
                                             } ${cell.isWeekend ? "opacity-50" : ""}`}
                                     >
+                                        {hasAnalysis && (
+                                            <span
+                                                className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-accent"
+                                                title="Daily analysis saved"
+                                            />
+                                        )}
                                         <span className={`text-xs ${cell.isToday ? "font-medium text-accent" : "text-ink-muted"}`}>
                                             {cell.day}
                                         </span>
@@ -113,9 +127,17 @@ export default function CalendarView({
                                 Clear
                             </button>
                         </div>
-                        <p className={`num mb-4 text-2xl font-medium ${pnlColor(selectedPnl)}`}>
+                        <p className={`num mb-2 text-2xl font-medium ${pnlColor(selectedPnl)}`}>
                             {formatUsd(selectedPnl, { sign: true })}
                         </p>
+
+                        <Link
+                            href={`/daily?account=${accountId}&date=${selectedDate}`}
+                            className="mb-4 flex w-fit items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-ink-secondary hover:border-accent hover:text-accent"
+                        >
+                            <ClipboardList size={13} />
+                            {analysisDateSet.has(selectedDate) ? "Review daily analysis" : "Add daily analysis"}
+                        </Link>
 
                         {selectedTrades.length === 0 ? (
                             <p className="py-6 text-center text-sm text-ink-muted">No trades on this day</p>

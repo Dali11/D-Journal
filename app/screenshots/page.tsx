@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { ImageOff } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
-import { getAccounts, getTrades } from "@/lib/queries";
+import { getAccounts, getTrades, getAllTradeScreenshots } from "@/lib/queries";
 import { formatUsd, pnlColor } from "@/lib/format";
 import type { Direction } from "@/lib/types";
 
 interface Shot {
     key: string;
     tradeId: string;
-    kind: "Entry" | "Exit";
+    kind: string;
     url: string;
     date: string;
     instrument: string;
@@ -20,6 +20,7 @@ const kindOptions = [
     { label: "All", value: "all" },
     { label: "Entry", value: "entry" },
     { label: "Exit", value: "exit" },
+    { label: "Other", value: "other" },
 ];
 
 const outcomeOptions = [
@@ -34,7 +35,13 @@ export default async function ScreenshotsPage({
     searchParams: Promise<{ kind?: string; outcome?: string }>;
 }) {
     const { kind = "all", outcome = "all" } = await searchParams;
-    const [accounts, trades] = await Promise.all([getAccounts(), getTrades()]);
+    const [accounts, trades, extraShots] = await Promise.all([
+        getAccounts(),
+        getTrades(),
+        getAllTradeScreenshots(),
+    ]);
+
+    const tradesById = new Map(trades.map((t) => [t.id, t]));
 
     const allShots: Shot[] = [];
     for (const t of trades) {
@@ -63,10 +70,26 @@ export default async function ScreenshotsPage({
             });
         }
     }
+    for (const s of extraShots) {
+        const t = tradesById.get(s.tradeId);
+        if (!t) continue;
+        allShots.push({
+            key: s.id,
+            tradeId: t.id,
+            kind: s.label,
+            url: s.url,
+            date: t.date,
+            instrument: t.instrument,
+            direction: t.direction,
+            pnl: t.pnl,
+        });
+    }
     allShots.sort((a, b) => (a.date < b.date ? 1 : -1));
 
     const shots = allShots.filter((s) => {
-        if (kind !== "all" && s.kind.toLowerCase() !== kind) return false;
+        if (kind === "entry" && s.kind !== "Entry") return false;
+        if (kind === "exit" && s.kind !== "Exit") return false;
+        if (kind === "other" && (s.kind === "Entry" || s.kind === "Exit")) return false;
         if (outcome === "win" && s.pnl <= 0) return false;
         if (outcome === "loss" && s.pnl >= 0) return false;
         return true;
@@ -129,7 +152,7 @@ export default async function ScreenshotsPage({
                             </p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
                             {shots.map((s) => (
                                 <Link
                                     key={s.key}

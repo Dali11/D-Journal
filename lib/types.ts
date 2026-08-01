@@ -171,6 +171,43 @@ export interface GoalProgress {
   tradesInPeriod: number;
 }
 
+export type DailyAnalysisPhase = "pre" | "mid" | "end";
+
+export interface DailyAnalysisScreenshot {
+  id: string;
+  accountId: string;
+  date: string;
+  phase: DailyAnalysisPhase;
+  url: string;
+  label: string;
+  createdAt: string;
+}
+
+export interface DailyAnalysis {
+  accountId: string;
+  date: string;
+  htfBias: string;
+  keyLevels: string;
+  newsEvents: string;
+  plan: string;
+  marketUpdate: string;
+  emotionalState: string;
+  deviations: string;
+  whatHappened: string;
+  lessons: string;
+  whatToRepeat: string;
+  whatToImprove: string;
+  updatedAt: string | null;
+}
+
+export interface TradeScreenshot {
+  id: string;
+  tradeId: string;
+  url: string;
+  label: string;
+  createdAt: string;
+}
+
 export interface NoteLinkedTrade {
   date: string;
   instrument: string;

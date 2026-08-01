@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Plus, Pin } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import TradeDetails from "@/components/TradeDetails";
-import { getAccounts, getTradeById, getNotesForTrade } from "@/lib/queries";
+import TradeScreenshotsPanel from "@/components/TradeScreenshotsPanel";
+import { getAccounts, getTradeById, getNotesForTrade, getTradeScreenshots } from "@/lib/queries";
 
 export default async function TradeDetailPage({
     params,
@@ -11,10 +12,11 @@ export default async function TradeDetailPage({
     params: Promise<{ id: string }>;
 }) {
     const { id } = await params;
-    const [accounts, trade, notes] = await Promise.all([
+    const [accounts, trade, notes, screenshots] = await Promise.all([
         getAccounts(),
         getTradeById(id),
         getNotesForTrade(id),
+        getTradeScreenshots(id),
     ]);
 
     if (!trade) {
@@ -38,6 +40,12 @@ export default async function TradeDetailPage({
 
                 <div className="mx-6 mt-4 lg:mx-8">
                     <TradeDetails trade={trade} accounts={accounts} />
+                </div>
+
+                <div className="mx-6 mt-6 lg:mx-8">
+                    <div className="rounded-xl border border-border bg-surface p-5">
+                        <TradeScreenshotsPanel tradeId={trade.id} screenshots={screenshots} />
+                    </div>
                 </div>
 
                 <div className="mx-6 mt-6 lg:mx-8">

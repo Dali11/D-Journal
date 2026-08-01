@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AccountSwitcher from "@/components/AccountSwitcher";
 import CalendarView from "@/components/CalendarView";
-import { getAccounts, getTrades, computeDailyPnlCalendar } from "@/lib/queries";
+import { getAccounts, getTrades, computeDailyPnlCalendar, getDailyAnalysisDates } from "@/lib/queries";
 import { resolveMonth, buildMonthGrid, groupTradesByDate, computeMonthSummary } from "@/lib/calendar";
 
 export default async function CalendarPage({
@@ -29,11 +29,14 @@ export default async function CalendarPage({
     }
 
     const monthInfo = resolveMonth(monthParam);
-    const trades = await getTrades({
-        accountId: activeAccount.id,
-        from: monthInfo.from,
-        to: monthInfo.to,
-    });
+    const [trades, analysisDates] = await Promise.all([
+        getTrades({
+            accountId: activeAccount.id,
+            from: monthInfo.from,
+            to: monthInfo.to,
+        }),
+        getDailyAnalysisDates(activeAccount.id, monthInfo.from, monthInfo.to),
+    ]);
 
     const dailyPnl = computeDailyPnlCalendar(trades, monthInfo.from, monthInfo.to);
     const tradesByDate = groupTradesByDate(trades);
@@ -82,7 +85,13 @@ export default async function CalendarPage({
                 </header>
 
                 <div className="mx-6 mt-6 lg:mx-8">
-                    <CalendarView weeks={weeks} tradesByDate={tradesByDate} summary={summary} />
+                    <CalendarView
+                        weeks={weeks}
+                        tradesByDate={tradesByDate}
+                        summary={summary}
+                        accountId={activeAccount.id}
+                        analysisDates={analysisDates}
+                    />
                 </div>
             </main>
         </div>

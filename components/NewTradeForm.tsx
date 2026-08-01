@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createTrade, type TradeFormResult } from "@/lib/actions/trades";
@@ -67,6 +68,19 @@ function SubmitButton() {
 
 export default function NewTradeForm({ accounts, setups = [] }: { accounts: Account[]; setups?: Setup[] }) {
     const [state, formAction] = useFormState(createTrade, initialState);
+    const [extraSlots, setExtraSlots] = useState<{ id: number; defaultLabel: string }[]>([
+        { id: 1, defaultLabel: "Higher timeframe" },
+        { id: 2, defaultLabel: "Confirmation" },
+        { id: 3, defaultLabel: "Context" },
+    ]);
+
+    function addSlot() {
+        setExtraSlots((prev) => [...prev, { id: (prev.at(-1)?.id ?? 0) + 1, defaultLabel: "Additional" }]);
+    }
+
+    function removeSlot(id: number) {
+        setExtraSlots((prev) => prev.filter((s) => s.id !== id));
+    }
     const router = useRouter();
     const today = new Date().toISOString().slice(0, 10);
 
@@ -278,6 +292,51 @@ export default function NewTradeForm({ accounts, setups = [] }: { accounts: Acco
                             className="w-full text-sm text-ink-secondary file:mr-3 file:rounded-lg file:border file:border-border file:bg-canvas file:px-3 file:py-2 file:text-sm file:text-ink-primary hover:file:border-border-strong"
                         />
                     </Field>
+
+                    <input type="hidden" name="extraScreenshotCount" value={extraSlots.length} />
+
+                    {extraSlots.map((slot, i) => (
+                        <div key={slot.id} className="flex items-end gap-2">
+                            <div className="flex flex-1 flex-col gap-1.5">
+                                <span className="text-xs text-ink-muted">Label</span>
+                                <input
+                                    name={`extraScreenshotLabel_${i}`}
+                                    defaultValue={slot.defaultLabel}
+                                    className="w-full rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-ink-primary outline-none focus:border-accent"
+                                />
+                            </div>
+                            <div className="flex flex-[2] flex-col gap-1.5">
+                                <span className="text-xs text-ink-muted">Image</span>
+                                <input
+                                    type="file"
+                                    name={`extraScreenshotFile_${i}`}
+                                    accept="image/*"
+                                    className="w-full text-sm text-ink-secondary file:mr-3 file:rounded-lg file:border file:border-border file:bg-canvas file:px-3 file:py-2 file:text-sm file:text-ink-primary hover:file:border-border-strong"
+                                />
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => removeSlot(slot.id)}
+                                className="mb-0.5 shrink-0 rounded-lg border border-border px-3 py-2 text-xs text-ink-muted hover:border-loss/40 hover:text-loss"
+                            >
+                                Remove
+                            </button>
+                        </div>
+                    ))}
+
+                    <div>
+                        <button
+                            type="button"
+                            onClick={addSlot}
+                            className="rounded-lg border border-dashed border-border px-4 py-2 text-sm text-ink-secondary hover:border-accent hover:text-accent"
+                        >
+                            + Add another screenshot
+                        </button>
+                        <p className="mt-2 text-xs text-ink-muted">
+                            Attach as many as you want — entry/exit plus any extra context charts. Blank rows are
+                            skipped automatically.
+                        </p>
+                    </div>
                 </SectionCard>
             </div>
 
