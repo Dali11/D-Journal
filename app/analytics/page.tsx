@@ -1,3 +1,4 @@
+import EmptyAccountsState from "@/components/EmptyAccountsState";
 import Sidebar from "@/components/Sidebar";
 import AccountSwitcher from "@/components/AccountSwitcher";
 import StageComparisonPanel from "@/components/StageComparisonPanel";
@@ -29,16 +30,7 @@ export default async function AnalyticsPage({
     const accounts = await getAccounts();
 
     if (accounts.length === 0) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-canvas text-ink-primary">
-                <div className="text-center">
-                    <p className="text-lg font-medium">No accounts yet</p>
-                    <p className="mt-2 text-sm text-ink-muted">
-                        Add an account in Supabase to get started.
-                    </p>
-                </div>
-            </div>
-        );
+        return <EmptyAccountsState />;
     }
 
     const isAll = accountIdParam === "all";

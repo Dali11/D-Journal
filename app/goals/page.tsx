@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import EmptyAccountsState from "@/components/EmptyAccountsState";
 import Sidebar from "@/components/Sidebar";
 import AccountSwitcher from "@/components/AccountSwitcher";
 import GoalCard from "@/components/GoalCard";
@@ -16,16 +17,7 @@ export default async function GoalsPage({
     const activeAccount = accounts.find((a) => a.id === accountIdParam) ?? accounts[0];
 
     if (!activeAccount) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-canvas text-ink-primary">
-                <div className="text-center">
-                    <p className="text-lg font-medium">No accounts yet</p>
-                    <p className="mt-2 text-sm text-ink-muted">
-                        Add an account in Supabase to get started.
-                    </p>
-                </div>
-            </div>
-        );
+        return <EmptyAccountsState />;
     }
 
     const [goals, trades] = await Promise.all([
