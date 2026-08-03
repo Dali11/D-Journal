@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import type {
     Account,
+    AccountBreakdownRow,
+    AccountResult,
     AccountSummary,
     DailyAnalysis,
     DailyAnalysisScreenshot,
@@ -69,6 +71,11 @@ function mapAccountRow(row: any): Account {
         name: row.name,
         balance: Number(row.balance),
         color: row.color,
+        stage: row.stage ?? "eval",
+        status: row.status ?? "active",
+        locked: row.locked ?? false,
+        lockedAt: row.locked_at ?? null,
+        resultNote: row.result_note ?? null,
     };
 }
 
@@ -114,7 +121,7 @@ export async function getAccountRules(accountId: string) {
     const supabase = await createClient();
     const { data, error } = await supabase
         .from("accounts")
-        .select("name, balance, consistency_rule, profit_target, max_daily_loss")
+        .select("name, balance, consistency_rule, profit_target, max_daily_loss, stage, status, locked, locked_at, result_note")
         .eq("id", accountId)
         .single();
 
@@ -125,6 +132,11 @@ export async function getAccountRules(accountId: string) {
         consistencyRule: Number(data.consistency_rule),
         profitTarget: Number(data.profit_target),
         maxDailyLoss: Number(data.max_daily_loss),
+        stage: (data.stage ?? "eval") as "eval" | "funded",
+        status: (data.status ?? "active") as "active" | "passed" | "failed",
+        locked: data.locked ?? false,
+        lockedAt: data.locked_at ?? null,
+        resultNote: data.result_note ?? null,
     };
 }
 
@@ -693,6 +705,52 @@ export async function getReport(accountId: string, from: string, to: string) {
     };
 }
 
+export function computeAccountBreakdown(accounts: Account[], trades: Trade[]): AccountBreakdownRow[] {
+    return accounts.map((a) => {
+        const accountTrades = trades.filter((t) => t.accountId === a.id);
+        const pnl = accountTrades.reduce((s, t) => s + t.pnl, 0);
+        const wins = accountTrades.filter((t) => t.pnl > 0).length;
+        return {
+            accountId: a.id,
+            name: a.name,
+            color: a.color,
+            balance: a.balance,
+            pnl,
+            tradeCount: accountTrades.length,
+            winRate: accountTrades.length ? Math.round((wins / accountTrades.length) * 100) : 0,
+        };
+    });
+}
+
+export function splitTradesByStage(
+    accounts: Account[],
+    trades: Trade[]
+): { evalTrades: Trade[]; fundedTrades: Trade[] } {
+    const evalIds = new Set(accounts.filter((a) => a.stage === "eval").map((a) => a.id));
+    const fundedIds = new Set(accounts.filter((a) => a.stage === "funded").map((a) => a.id));
+    return {
+        evalTrades: trades.filter((t) => evalIds.has(t.accountId)),
+        fundedTrades: trades.filter((t) => fundedIds.has(t.accountId)),
+    };
+}
+
+export interface StageOutcomes {
+    total: number;
+    active: number;
+    passed: number;
+    failed: number;
+}
+
+export function computeStageOutcomes(accounts: Account[], stage: "eval" | "funded"): StageOutcomes {
+    const inStage = accounts.filter((a) => a.stage === stage);
+    return {
+        total: inStage.length,
+        active: inStage.filter((a) => a.status === "active").length,
+        passed: inStage.filter((a) => a.status === "passed").length,
+        failed: inStage.filter((a) => a.status === "failed").length,
+    };
+}
+
 export function computeAccountSummary(
     account: { name: string; balance: number; consistencyRule: number; profitTarget: number; maxDailyLoss: number },
     trades: Trade[]
@@ -736,4 +794,30 @@ export function computeAccountSummary(
         payoutEligible,
         estPayout: payoutEligible ? Number((totalProfit * 0.9).toFixed(2)) : 0,
     };
+}
+
+// Looks at an account's current stats against its own configured rules and
+// says whether it looks like a pass or a fail — purely a detection signal,
+// not a persisted state. The person confirms it via lockAccount before it's
+// treated as final.
+export function detectAccountResult(
+    rules: { balance: number; consistencyRule: number; profitTarget: number; maxDailyLoss: number },
+    trades: Trade[]
+): AccountResult {
+    if (trades.length === 0) return null;
+
+    const summary = computeAccountSummary(
+        { name: "", balance: rules.balance, consistencyRule: rules.consistencyRule, profitTarget: rules.profitTarget, maxDailyLoss: rules.maxDailyLoss },
+        trades
+    );
+
+    const byDate = new Map<string, number>();
+    for (const t of trades) byDate.set(t.date, (byDate.get(t.date) ?? 0) + t.pnl);
+    const worstDay = Math.min(0, ...Array.from(byDate.values()));
+    const breachedDailyLoss = rules.maxDailyLoss > 0 && Math.abs(worstDay) >= rules.maxDailyLoss;
+    const breachedDrawdown = rules.maxDailyLoss > 0 && summary.remainingDrawdown <= 0;
+
+    if (breachedDailyLoss || breachedDrawdown) return "failed";
+    if (summary.payoutEligible) return "passed";
+    return null;
 }

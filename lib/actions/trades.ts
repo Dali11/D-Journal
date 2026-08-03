@@ -95,6 +95,19 @@ export async function createTrade(
     if (exitPrice === null) return { error: "Please enter an exit price." };
     if (pnl === null) return { error: "Please enter the trade P&L." };
 
+    const { data: accountRow, error: accountLookupError } = await supabase
+        .from("accounts")
+        .select("locked, status")
+        .eq("id", accountId)
+        .single();
+
+    if (accountLookupError) return { error: "Could not find that account." };
+    if (accountRow.locked) {
+        return {
+            error: `This account is locked (${accountRow.status}). Unlock it first if you need to log more trades against it.`,
+        };
+    }
+
     const entryScreenshot = file(formData, "entryScreenshot");
     const exitScreenshot = file(formData, "exitScreenshot");
 

@@ -2,11 +2,30 @@ export type Direction = "Long" | "Short";
 export type Grade = "A" | "B" | "C" | "D" | "F";
 export type YesNo = "Yes" | "No";
 
+export type AccountStage = "eval" | "funded";
+export type AccountStatus = "active" | "passed" | "failed";
+export type AccountResult = "passed" | "failed" | null;
+
 export interface Account {
   id: string;
   name: string;
   balance: number;
   color: string;
+  stage: AccountStage;
+  status: AccountStatus;
+  locked: boolean;
+  lockedAt: string | null;
+  resultNote: string | null;
+}
+
+export interface AccountBreakdownRow {
+  accountId: string;
+  name: string;
+  color: string;
+  balance: number;
+  pnl: number;
+  tradeCount: number;
+  winRate: number;
 }
 
 export interface Setup {

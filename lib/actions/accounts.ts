@@ -37,6 +37,7 @@ export async function createAccount(
     const name = str(formData, "name");
     const balance = num(formData, "balance");
     const color = str(formData, "color") ?? "#7C6CF2";
+    const stage = str(formData, "stage") === "funded" ? "funded" : "eval";
     const consistencyRule = num(formData, "consistencyRule") ?? 40;
     const profitTarget = num(formData, "profitTarget") ?? 0;
     const maxDailyLoss = num(formData, "maxDailyLoss") ?? 0;
@@ -51,6 +52,7 @@ export async function createAccount(
             name,
             balance,
             color,
+            stage,
             consistency_rule: consistencyRule,
             profit_target: profitTarget,
             max_daily_loss: maxDailyLoss,
@@ -64,4 +66,57 @@ export async function createAccount(
 
     revalidatePath("/");
     redirect(`/?account=${data.id}`);
+}
+
+export type LockAccountResult = { error: string } | { error: null };
+
+export async function lockAccount(
+    accountId: string,
+    status: "passed" | "failed",
+    note?: string
+): Promise<LockAccountResult> {
+    const supabase = await createClient();
+
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return { error: "You must be signed in." };
+
+    const { error } = await supabase
+        .from("accounts")
+        .update({
+            status,
+            locked: true,
+            locked_at: new Date().toISOString(),
+            result_note: note ?? null,
+        })
+        .eq("id", accountId);
+
+    if (error) return { error: error.message };
+
+    revalidatePath("/");
+    revalidatePath("/analytics");
+    return { error: null };
+}
+
+export async function unlockAccount(accountId: string): Promise<LockAccountResult> {
+    const supabase = await createClient();
+
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return { error: "You must be signed in." };
+
+    const { error } = await supabase
+        .from("accounts")
+        .update({ status: "active", locked: false, locked_at: null, result_note: null })
+        .eq("id", accountId);
+
+    if (error) return { error: error.message };
+
+    revalidatePath("/");
+    revalidatePath("/analytics");
+    return { error: null };
 }

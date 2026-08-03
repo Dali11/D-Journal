@@ -77,14 +77,28 @@ export default function Sidebar({ accounts }: { accounts: Account[] }) {
               href={`/?account=${a.id}`}
               className="flex items-center justify-between rounded-md text-sm hover:bg-surface-hover"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 items-center gap-2">
                 <span
-                  className="h-2 w-2 rounded-full"
+                  className="h-2 w-2 shrink-0 rounded-full"
                   style={{ backgroundColor: a.color }}
                 />
-                <span className="text-ink-secondary">{a.name}</span>
+                <span className={`truncate ${a.locked ? "text-ink-muted" : "text-ink-secondary"}`}>{a.name}</span>
+                <span
+                  className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] uppercase tracking-wide ${a.stage === "funded" ? "bg-profit/10 text-profit" : "bg-accent/10 text-accent"
+                    }`}
+                >
+                  {a.stage === "funded" ? "Funded" : "Eval"}
+                </span>
+                {a.status !== "active" && (
+                  <span
+                    className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] uppercase tracking-wide ${a.status === "passed" ? "bg-profit/15 text-profit" : "bg-loss/15 text-loss"
+                      }`}
+                  >
+                    {a.status}
+                  </span>
+                )}
               </div>
-              <span className="num text-xs text-ink-muted">
+              <span className="num shrink-0 text-xs text-ink-muted">
                 {formatUsd(a.balance)}
               </span>
             </Link>

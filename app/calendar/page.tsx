@@ -13,9 +13,8 @@ export default async function CalendarPage({
 }) {
     const { account: accountIdParam, month: monthParam } = await searchParams;
     const accounts = await getAccounts();
-    const activeAccount = accounts.find((a) => a.id === accountIdParam) ?? accounts[0];
 
-    if (!activeAccount) {
+    if (accounts.length === 0) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-canvas text-ink-primary">
                 <div className="text-center">
@@ -28,15 +27,26 @@ export default async function CalendarPage({
         );
     }
 
+    const isAll = accountIdParam === "all";
+    const activeAccount = accounts.find((a) => a.id === accountIdParam) ?? (isAll ? null : accounts[0]);
+
     const monthInfo = resolveMonth(monthParam);
-    const [trades, analysisDates] = await Promise.all([
-        getTrades({
-            accountId: activeAccount.id,
-            from: monthInfo.from,
-            to: monthInfo.to,
-        }),
-        getDailyAnalysisDates(activeAccount.id, monthInfo.from, monthInfo.to),
-    ]);
+
+    const trades = isAll
+        ? await getTrades({ from: monthInfo.from, to: monthInfo.to })
+        : await getTrades({ accountId: activeAccount!.id, from: monthInfo.from, to: monthInfo.to });
+
+    const analysisDates = isAll
+        ? Array.from(
+            new Set(
+                (
+                    await Promise.all(
+                        accounts.map((a) => getDailyAnalysisDates(a.id, monthInfo.from, monthInfo.to))
+                    )
+                ).flat()
+            )
+        )
+        : await getDailyAnalysisDates(activeAccount!.id, monthInfo.from, monthInfo.to);
 
     const dailyPnl = computeDailyPnlCalendar(trades, monthInfo.from, monthInfo.to);
     const tradesByDate = groupTradesByDate(trades);
@@ -44,7 +54,7 @@ export default async function CalendarPage({
     const summary = computeMonthSummary(dailyPnl);
 
     const currentMonthParam = `${monthInfo.year}-${String(monthInfo.month + 1).padStart(2, "0")}`;
-    const accountQuery = `account=${activeAccount.id}`;
+    const accountQuery = `account=${isAll ? "all" : activeAccount!.id}`;
     const prevHref = `/calendar?${accountQuery}&month=${monthInfo.prevParam}`;
     const nextHref = `/calendar?${accountQuery}&month=${monthInfo.nextParam}`;
 
@@ -56,14 +66,15 @@ export default async function CalendarPage({
                 <header className="flex flex-wrap items-center justify-between gap-4 px-6 pt-6 pb-2 lg:px-8">
                     <div>
                         <h1 className="text-xl font-medium tracking-tight">Calendar</h1>
-                        <p className="mt-1 text-sm text-ink-muted">{activeAccount.name}</p>
+                        <p className="mt-1 text-sm text-ink-muted">{isAll ? "All accounts" : activeAccount!.name}</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                         <AccountSwitcher
                             accounts={accounts}
-                            activeAccountId={activeAccount.id}
+                            activeAccountId={isAll ? "all" : activeAccount!.id}
                             basePath="/calendar"
                             extraQuery={`month=${currentMonthParam}`}
+                            allowAll
                         />
                         <div className="flex items-center gap-1 rounded-lg border border-border bg-surface px-2 py-1.5">
                             <Link href={prevHref} className="rounded p-1 text-ink-muted hover:bg-surface-hover hover:text-ink-primary" aria-label="Previous month">
@@ -89,7 +100,7 @@ export default async function CalendarPage({
                         weeks={weeks}
                         tradesByDate={tradesByDate}
                         summary={summary}
-                        accountId={activeAccount.id}
+                        accountId={isAll ? null : activeAccount!.id}
                         analysisDates={analysisDates}
                     />
                 </div>

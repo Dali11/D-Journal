@@ -19,6 +19,11 @@ export interface Database {
                     consistency_rule: number
                     profit_target: number
                     max_daily_loss: number
+                    stage: "eval" | "funded"
+                    status: "active" | "passed" | "failed"
+                    locked: boolean
+                    locked_at: string | null
+                    result_note: string | null
                     created_at: string
                 }
                 Insert: {
@@ -30,6 +35,11 @@ export interface Database {
                     consistency_rule?: number
                     profit_target?: number
                     max_daily_loss?: number
+                    stage?: "eval" | "funded"
+                    status?: "active" | "passed" | "failed"
+                    locked?: boolean
+                    locked_at?: string | null
+                    result_note?: string | null
                     created_at?: string
                 }
                 Update: {
@@ -41,6 +51,11 @@ export interface Database {
                     consistency_rule?: number
                     profit_target?: number
                     max_daily_loss?: number
+                    stage?: "eval" | "funded"
+                    status?: "active" | "passed" | "failed"
+                    locked?: boolean
+                    locked_at?: string | null
+                    result_note?: string | null
                     created_at?: string
                 }
                 Relationships: []

@@ -37,7 +37,7 @@ export default function CalendarView({
     weeks: CalendarCell[][];
     tradesByDate: Record<string, Trade[]>;
     summary: MonthSummary;
-    accountId: string;
+    accountId: string | null;
     analysisDates: string[];
 }) {
     const router = useRouter();
@@ -131,13 +131,15 @@ export default function CalendarView({
                             {formatUsd(selectedPnl, { sign: true })}
                         </p>
 
-                        <Link
-                            href={`/daily?account=${accountId}&date=${selectedDate}`}
-                            className="mb-4 flex w-fit items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-ink-secondary hover:border-accent hover:text-accent"
-                        >
-                            <ClipboardList size={13} />
-                            {analysisDateSet.has(selectedDate) ? "Review daily analysis" : "Add daily analysis"}
-                        </Link>
+                        {accountId && (
+                            <Link
+                                href={`/daily?account=${accountId}&date=${selectedDate}`}
+                                className="mb-4 flex w-fit items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-ink-secondary hover:border-accent hover:text-accent"
+                            >
+                                <ClipboardList size={13} />
+                                {analysisDateSet.has(selectedDate) ? "Review daily analysis" : "Add daily analysis"}
+                            </Link>
+                        )}
 
                         {selectedTrades.length === 0 ? (
                             <p className="py-6 text-center text-sm text-ink-muted">No trades on this day</p>

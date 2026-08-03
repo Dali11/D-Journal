@@ -72,6 +72,23 @@ export default function NewAccountForm() {
                     <input type="number" name="balance" step="0.01" placeholder="25000" className={inputClass} required />
                 </Field>
 
+                <Field label="Account type">
+                    <div className="flex rounded-lg border border-border p-1 text-sm">
+                        <label className="flex-1">
+                            <input type="radio" name="stage" value="eval" defaultChecked className="peer sr-only" />
+                            <span className="block cursor-pointer rounded-md py-1.5 text-center text-ink-muted peer-checked:bg-accent/15 peer-checked:text-accent">
+                                Eval / Challenge
+                            </span>
+                        </label>
+                        <label className="flex-1">
+                            <input type="radio" name="stage" value="funded" className="peer sr-only" />
+                            <span className="block cursor-pointer rounded-md py-1.5 text-center text-ink-muted peer-checked:bg-accent/15 peer-checked:text-accent">
+                                Funded
+                            </span>
+                        </label>
+                    </div>
+                </Field>
+
                 <Field label="Color">
                     <div className="flex flex-wrap gap-2">
                         {colorOptions.map((c, i) => (
