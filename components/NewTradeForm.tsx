@@ -174,6 +174,15 @@ export default function NewTradeForm({ accounts, setups = [] }: { accounts: Acco
                     <Field label="P&L (USD)" required>
                         <input type="number" name="pnl" step="0.01" className={inputClass} required />
                     </Field>
+                    <Field label="Intraday low (USD)">
+                        <input
+                            type="number"
+                            name="intradayLow"
+                            step="0.01"
+                            placeholder="Only if worse than close"
+                            className={inputClass}
+                        />
+                    </Field>
                 </SectionCard>
 
                 <SectionCard index={3} title="Setup checklist">

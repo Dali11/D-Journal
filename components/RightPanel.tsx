@@ -101,8 +101,22 @@ export default function RightPanel({
                   : "text-loss"
             }
           />
-          <SummaryRow label="Remaining drawdown" value={formatUsd(accountSummary.remainingDrawdown)} valueClass="text-profit" />
-          <SummaryRow label="Max daily loss" value={formatUsd(accountSummary.maxDailyLoss)} />
+          <SummaryRow
+            label="Remaining daily loss"
+            value={formatUsd(accountSummary.remainingDailyLoss)}
+            valueClass={accountSummary.remainingDailyLoss > 0 ? "text-profit" : "text-loss"}
+          />
+          <SummaryRow
+            label={`Remaining drawdown${accountSummary.drawdownIsEstimate ? " (est.)" : ""}`}
+            value={formatUsd(accountSummary.remainingDrawdown)}
+            valueClass={accountSummary.remainingDrawdown > 0 ? "text-profit" : "text-loss"}
+          />
+          {accountSummary.drawdownIsEstimate && (
+            <p className="mt-1 text-xs text-ink-muted">
+              This account is set to intraday drawdown, but no trades have an intraday low logged yet —
+              showing an end-of-day estimate.
+            </p>
+          )}
           <SummaryRow
             label="Payout eligible"
             value={accountSummary.payoutEligible ? "Yes" : "No"}

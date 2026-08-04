@@ -9,6 +9,7 @@ import type {
     DailyPnl,
     DayOfWeekPnl,
     DisciplineRow,
+    DrawdownType,
     EquityPoint,
     Goal,
     GroupStat,
@@ -46,6 +47,7 @@ function mapTradeRow(row: any): Trade {
         rewardPts: Number(row.reward_pts ?? 0),
         rrAchieved: Number(row.rr_achieved ?? 0),
         pnl: Number(row.pnl),
+        intradayLow: row.intraday_low === null || row.intraday_low === undefined ? null : Number(row.intraday_low),
         setup: row.setup ?? null,
         aPlusSetup: row.a_plus_setup ?? "No",
         trendDirection: row.trend_direction ?? "Range",
@@ -121,7 +123,9 @@ export async function getAccountRules(accountId: string) {
     const supabase = await createClient();
     const { data, error } = await supabase
         .from("accounts")
-        .select("name, balance, consistency_rule, profit_target, max_daily_loss, stage, status, locked, locked_at, result_note")
+        .select(
+            "name, balance, consistency_rule, profit_target, max_daily_loss, max_drawdown, drawdown_type, stage, status, locked, locked_at, result_note"
+        )
         .eq("id", accountId)
         .single();
 
@@ -132,6 +136,8 @@ export async function getAccountRules(accountId: string) {
         consistencyRule: Number(data.consistency_rule),
         profitTarget: Number(data.profit_target),
         maxDailyLoss: Number(data.max_daily_loss),
+        maxDrawdown: Number(data.max_drawdown ?? 0),
+        drawdownType: (data.drawdown_type ?? "eod") as "eod" | "intraday",
         stage: (data.stage ?? "eval") as "eval" | "funded",
         status: (data.status ?? "active") as "active" | "passed" | "failed",
         locked: data.locked ?? false,
@@ -752,7 +758,15 @@ export function computeStageOutcomes(accounts: Account[], stage: "eval" | "funde
 }
 
 export function computeAccountSummary(
-    account: { name: string; balance: number; consistencyRule: number; profitTarget: number; maxDailyLoss: number },
+    account: {
+        name: string;
+        balance: number;
+        consistencyRule: number;
+        profitTarget: number;
+        maxDailyLoss: number;
+        maxDrawdown: number;
+        drawdownType: DrawdownType;
+    },
     trades: Trade[]
 ): AccountSummary {
     const totalProfit = trades.reduce((s, t) => s + t.pnl, 0);
@@ -768,17 +782,37 @@ export function computeAccountSummary(
     const bestDayProfit = Math.max(0, ...Array.from(byDate.values()));
     const consistencyPct = totalProfit > 0 ? (bestDayProfit / totalProfit) * 100 : 0;
 
-    // Drawdown: lowest equity dip below starting balance
-    const sortedDates = Array.from(byDate.keys()).sort();
+    // Max daily loss: worst single day's closed P&L (this is always an EOD-style
+    // check by definition — the limit resets each day regardless of drawdown type).
+    const worstDayPnl = Math.min(0, ...Array.from(byDate.values()));
+    const remainingDailyLoss = Math.max(0, account.maxDailyLoss - Math.abs(worstDayPnl));
+
+    // Max drawdown: walk trades chronologically, tracking peak-to-trough equity.
+    // Between a trade's open and close, use its logged intraday_low if present
+    // (a deeper floating loss than the eventual close) — otherwise fall back to
+    // the closed P&L, which is the best an EOD-only view can do.
+    const sortedTrades = [...trades].sort((a, b) => {
+        if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+        return (a.entryTime || "").localeCompare(b.entryTime || "");
+    });
+
+    let anyIntradayLowLogged = false;
     let equity = account.balance;
     let peak = account.balance;
     let maxDrawdown = 0;
-    for (const date of sortedDates) {
-        equity += byDate.get(date)!;
+    for (const t of sortedTrades) {
+        if (t.intradayLow !== null) anyIntradayLowLogged = true;
+        const dip = t.intradayLow !== null ? Math.min(t.intradayLow, t.pnl) : t.pnl;
+
+        peak = Math.max(peak, equity);
+        maxDrawdown = Math.max(maxDrawdown, peak - (equity + dip));
+
+        equity += t.pnl;
         peak = Math.max(peak, equity);
         maxDrawdown = Math.max(maxDrawdown, peak - equity);
     }
-    const remainingDrawdown = Math.max(0, account.maxDailyLoss - maxDrawdown);
+    const remainingDrawdown = Math.max(0, account.maxDrawdown - maxDrawdown);
+    const drawdownIsEstimate = account.drawdownType === "intraday" && !anyIntradayLowLogged;
 
     const payoutEligible = progressPct >= 100 && consistencyPct <= account.consistencyRule;
 
@@ -789,8 +823,12 @@ export function computeAccountSummary(
         totalProfit: Number(totalProfit.toFixed(2)),
         profitTarget: account.profitTarget,
         progressPct: Number(progressPct.toFixed(1)),
-        remainingDrawdown: Number(remainingDrawdown.toFixed(2)),
+        remainingDailyLoss: Number(remainingDailyLoss.toFixed(2)),
         maxDailyLoss: account.maxDailyLoss,
+        remainingDrawdown: Number(remainingDrawdown.toFixed(2)),
+        maxDrawdown: account.maxDrawdown,
+        drawdownType: account.drawdownType,
+        drawdownIsEstimate,
         payoutEligible,
         estPayout: payoutEligible ? Number((totalProfit * 0.9).toFixed(2)) : 0,
     };
@@ -801,21 +839,33 @@ export function computeAccountSummary(
 // not a persisted state. The person confirms it via lockAccount before it's
 // treated as final.
 export function detectAccountResult(
-    rules: { balance: number; consistencyRule: number; profitTarget: number; maxDailyLoss: number },
+    rules: {
+        balance: number;
+        consistencyRule: number;
+        profitTarget: number;
+        maxDailyLoss: number;
+        maxDrawdown: number;
+        drawdownType: DrawdownType;
+    },
     trades: Trade[]
 ): AccountResult {
     if (trades.length === 0) return null;
 
     const summary = computeAccountSummary(
-        { name: "", balance: rules.balance, consistencyRule: rules.consistencyRule, profitTarget: rules.profitTarget, maxDailyLoss: rules.maxDailyLoss },
+        {
+            name: "",
+            balance: rules.balance,
+            consistencyRule: rules.consistencyRule,
+            profitTarget: rules.profitTarget,
+            maxDailyLoss: rules.maxDailyLoss,
+            maxDrawdown: rules.maxDrawdown,
+            drawdownType: rules.drawdownType,
+        },
         trades
     );
 
-    const byDate = new Map<string, number>();
-    for (const t of trades) byDate.set(t.date, (byDate.get(t.date) ?? 0) + t.pnl);
-    const worstDay = Math.min(0, ...Array.from(byDate.values()));
-    const breachedDailyLoss = rules.maxDailyLoss > 0 && Math.abs(worstDay) >= rules.maxDailyLoss;
-    const breachedDrawdown = rules.maxDailyLoss > 0 && summary.remainingDrawdown <= 0;
+    const breachedDailyLoss = rules.maxDailyLoss > 0 && summary.remainingDailyLoss <= 0;
+    const breachedDrawdown = rules.maxDrawdown > 0 && summary.remainingDrawdown <= 0;
 
     if (breachedDailyLoss || breachedDrawdown) return "failed";
     if (summary.payoutEligible) return "passed";

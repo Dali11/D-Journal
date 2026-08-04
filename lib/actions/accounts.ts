@@ -41,6 +41,8 @@ export async function createAccount(
     const consistencyRule = num(formData, "consistencyRule") ?? 40;
     const profitTarget = num(formData, "profitTarget") ?? 0;
     const maxDailyLoss = num(formData, "maxDailyLoss") ?? 0;
+    const maxDrawdown = num(formData, "maxDrawdown") ?? 0;
+    const drawdownType = str(formData, "drawdownType") === "intraday" ? "intraday" : "eod";
 
     if (!name) return { error: "Please enter an account name." };
     if (balance === null) return { error: "Please enter a starting balance." };
@@ -56,6 +58,8 @@ export async function createAccount(
             consistency_rule: consistencyRule,
             profit_target: profitTarget,
             max_daily_loss: maxDailyLoss,
+            max_drawdown: maxDrawdown,
+            drawdown_type: drawdownType,
         })
         .select("id")
         .single();

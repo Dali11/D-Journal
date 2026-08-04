@@ -124,6 +124,28 @@ export default function NewAccountForm() {
                         <Field label="Max daily loss (USD)">
                             <input type="number" name="maxDailyLoss" step="0.01" placeholder="1000" className={inputClass} />
                         </Field>
+                        <Field label="Max drawdown (USD)">
+                            <input type="number" name="maxDrawdown" step="0.01" placeholder="2000" className={inputClass} />
+                        </Field>
+                        <Field label="Drawdown type">
+                            <div className="flex rounded-lg border border-border p-1 text-sm">
+                                <label className="flex-1">
+                                    <input type="radio" name="drawdownType" value="eod" defaultChecked className="peer sr-only" />
+                                    <span className="block cursor-pointer rounded-md py-1.5 text-center text-ink-muted peer-checked:bg-accent/15 peer-checked:text-accent">
+                                        End of day
+                                    </span>
+                                </label>
+                                <label className="flex-1">
+                                    <input type="radio" name="drawdownType" value="intraday" className="peer sr-only" />
+                                    <span className="block cursor-pointer rounded-md py-1.5 text-center text-ink-muted peer-checked:bg-accent/15 peer-checked:text-accent">
+                                        Intraday
+                                    </span>
+                                </label>
+                            </div>
+                            <p className="mt-1.5 text-xs text-ink-muted">
+                                Intraday accounts show an estimate unless you log an intraday low per trade.
+                            </p>
+                        </Field>
                     </div>
                 </div>
             </div>

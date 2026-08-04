@@ -43,6 +43,8 @@ export interface SetupStats extends Setup {
   avgPnl: number;
 }
 
+export type DrawdownType = "eod" | "intraday";
+
 export interface AccountSummary {
   accountName: string;
   consistencyPct: number;
@@ -50,8 +52,12 @@ export interface AccountSummary {
   totalProfit: number;
   profitTarget: number;
   progressPct: number;
-  remainingDrawdown: number;
+  remainingDailyLoss: number;
   maxDailyLoss: number;
+  remainingDrawdown: number;
+  maxDrawdown: number;
+  drawdownType: DrawdownType;
+  drawdownIsEstimate: boolean;
   payoutEligible: boolean;
   estPayout: number;
 }
@@ -76,6 +82,7 @@ export interface Trade {
   rewardPts: number;
   rrAchieved: number;
   pnl: number;
+  intradayLow: number | null;
   setup: string | null;
   aPlusSetup: YesNo;
   trendDirection: "Uptrend" | "Downtrend" | "Range";

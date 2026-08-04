@@ -82,6 +82,7 @@ export async function createTrade(
     const entryPrice = num(formData, "entryPrice");
     const exitPrice = num(formData, "exitPrice");
     const pnl = num(formData, "pnl");
+    const intradayLow = num(formData, "intradayLow");
 
     // Required fields
     if (!accountId) return { error: "Please select an account." };
@@ -154,6 +155,7 @@ export async function createTrade(
             reward_pts: num(formData, "rewardPts"),
             rr_achieved: num(formData, "rrAchieved"),
             pnl,
+            intraday_low: intradayLow,
             setup: str(formData, "setup"),
             a_plus_setup: enumStr(formData, "aPlusSetup", ["Yes", "No"] as const),
             trend_direction: enumStr(formData, "trendDirection", ["Uptrend", "Downtrend", "Range"] as const),

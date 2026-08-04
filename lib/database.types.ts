@@ -19,6 +19,8 @@ export interface Database {
                     consistency_rule: number
                     profit_target: number
                     max_daily_loss: number
+                    max_drawdown: number
+                    drawdown_type: "eod" | "intraday"
                     stage: "eval" | "funded"
                     status: "active" | "passed" | "failed"
                     locked: boolean
@@ -35,6 +37,8 @@ export interface Database {
                     consistency_rule?: number
                     profit_target?: number
                     max_daily_loss?: number
+                    max_drawdown?: number
+                    drawdown_type?: "eod" | "intraday"
                     stage?: "eval" | "funded"
                     status?: "active" | "passed" | "failed"
                     locked?: boolean
@@ -51,6 +55,8 @@ export interface Database {
                     consistency_rule?: number
                     profit_target?: number
                     max_daily_loss?: number
+                    max_drawdown?: number
+                    drawdown_type?: "eod" | "intraday"
                     stage?: "eval" | "funded"
                     status?: "active" | "passed" | "failed"
                     locked?: boolean
@@ -82,6 +88,7 @@ export interface Database {
                     reward_pts: number | null
                     rr_achieved: number | null
                     pnl: number
+                    intraday_low: number | null
                     setup: string | null
                     a_plus_setup: "Yes" | "No" | null
                     trend_direction: "Uptrend" | "Downtrend" | "Range" | null
@@ -121,6 +128,7 @@ export interface Database {
                     reward_pts?: number | null
                     rr_achieved?: number | null
                     pnl?: number
+                    intraday_low?: number | null
                     setup?: string | null
                     a_plus_setup?: "Yes" | "No" | null
                     trend_direction?: "Uptrend" | "Downtrend" | "Range" | null
@@ -160,6 +168,7 @@ export interface Database {
                     reward_pts?: number | null
                     rr_achieved?: number | null
                     pnl?: number
+                    intraday_low?: number | null
                     setup?: string | null
                     a_plus_setup?: "Yes" | "No" | null
                     trend_direction?: "Uptrend" | "Downtrend" | "Range" | null
