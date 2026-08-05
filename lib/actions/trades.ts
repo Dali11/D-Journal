@@ -251,3 +251,98 @@ export async function deleteTradeScreenshot(screenshotId: string, tradeId: strin
     revalidatePath(`/trades/${tradeId}`);
     revalidatePath("/screenshots");
 }
+export async function updateTrade(
+    _prevState: TradeFormResult,
+    formData: FormData
+): Promise<TradeFormResult> {
+    const supabase = await createClient();
+
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return { error: "You must be signed in to edit a trade." };
+
+    const tradeId = str(formData, "tradeId");
+    if (!tradeId) return { error: "Missing trade." };
+
+    const accountId = str(formData, "accountId");
+    const date = str(formData, "date");
+    const instrument = str(formData, "instrument");
+    const direction = enumStr(formData, "direction", ["Long", "Short"] as const);
+    const contracts = num(formData, "contracts");
+    const entryPrice = num(formData, "entryPrice");
+    const exitPrice = num(formData, "exitPrice");
+    const pnl = num(formData, "pnl");
+    const intradayLow = num(formData, "intradayLow");
+
+    if (!accountId) return { error: "Please select an account." };
+    if (!date) return { error: "Please enter a date." };
+    if (!instrument) return { error: "Please enter an instrument." };
+    if (!direction) return { error: "Please select a direction." };
+    if (contracts === null) return { error: "Please enter contracts." };
+    if (entryPrice === null) return { error: "Please enter an entry price." };
+    if (exitPrice === null) return { error: "Please enter an exit price." };
+    if (pnl === null) return { error: "Please enter the trade P&L." };
+
+    const entryScreenshot = file(formData, "entryScreenshot");
+    const exitScreenshot = file(formData, "exitScreenshot");
+
+    const [entryUpload, exitUpload] = await Promise.all([
+        uploadScreenshot(supabase, user.id, entryScreenshot, "Entry"),
+        uploadScreenshot(supabase, user.id, exitScreenshot, "Exit"),
+    ]);
+
+    if (entryUpload.error) return { error: entryUpload.error };
+    if (exitUpload.error) return { error: exitUpload.error };
+
+    const updatePayload: Record<string, unknown> = {
+        account_id: accountId,
+        date,
+        instrument,
+        instrument_label: str(formData, "instrumentLabel"),
+        session: str(formData, "session"),
+        session_time: str(formData, "sessionTime"),
+        entry_time: str(formData, "entryTime"),
+        exit_time: str(formData, "exitTime"),
+        direction,
+        contracts,
+        entry_price: entryPrice,
+        exit_price: exitPrice,
+        risk_usd: num(formData, "riskUsd"),
+        risk_pts: num(formData, "riskPts"),
+        reward_usd: num(formData, "rewardUsd"),
+        reward_pts: num(formData, "rewardPts"),
+        rr_achieved: num(formData, "rrAchieved"),
+        pnl,
+        intraday_low: intradayLow,
+        setup: str(formData, "setup"),
+        a_plus_setup: enumStr(formData, "aPlusSetup", ["Yes", "No"] as const),
+        trend_direction: enumStr(formData, "trendDirection", ["Uptrend", "Downtrend", "Range"] as const),
+        htf_bias: enumStr(formData, "htfBias", ["Bullish", "Bearish", "Neutral"] as const),
+        entry_confirmation: enumStr(formData, "entryConfirmation", ["Valid", "Invalid"] as const),
+        news_nearby: enumStr(formData, "newsNearby", ["Yes", "No"] as const),
+        grade: enumStr(formData, "grade", ["A", "B", "C", "D", "F"] as const),
+        confidence_before: num(formData, "confidenceBefore"),
+        emotions_before: str(formData, "emotionsBefore"),
+        emotions_after: str(formData, "emotionsAfter"),
+        followed_plan: enumStr(formData, "followedPlan", ["Yes", "No"] as const),
+        revenge_trade: enumStr(formData, "revengeTrade", ["Yes", "No"] as const),
+        fomo: enumStr(formData, "fomo", ["Yes", "No"] as const),
+        notes: str(formData, "notes"),
+    };
+
+    // Only overwrite screenshots if a new file was actually uploaded — leave
+    // the existing image alone otherwise.
+    if (entryUpload.url) updatePayload.entry_screenshot_url = entryUpload.url;
+    if (exitUpload.url) updatePayload.exit_screenshot_url = exitUpload.url;
+
+    const { error } = await supabase.from("trades").update(updatePayload as never).eq("id", tradeId);
+
+    if (error) return { error: error.message };
+
+    revalidatePath(`/trades/${tradeId}`);
+    revalidatePath("/trades");
+    revalidatePath("/");
+    return { error: null };
+}
